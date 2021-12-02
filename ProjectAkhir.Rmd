@@ -1,0 +1,78 @@
+---
+title: "ProjectAkhir"
+author: "123190135_SekarArumK"
+date: "11/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project Akhir - Tema : Pariwisata
+
+
+```{r}
+# Membersihkan data
+library(tm) 
+# Load dataset
+library(vroom) 
+# Menyimpan dataset
+library(here) 
+
+```
+
+```{r load dataset}
+dataset <- vroom(here('universal_studio_branches.csv'))
+
+ulasan <- dataset$review_text
+ulasan2 <- Corpus(VectorSource(ulasan))
+
+# Membersihkan URl
+removeURL <- function(x) gsub("http[^[:space:]]*", "", x)
+reviewclean <- tm_map(ulasan2, removeURL)
+
+# Membersihkan New Line
+removeNL <- function(y) gsub("\n", " ", y)
+reviewclean <- tm_map(reviewclean, removeNL)
+
+# Membersihkan tanda koma
+replacecomma <- function(y) gsub(",", "", y)
+reviewclean <- tm_map(reviewclean, replacecomma)
+
+# Membersihkan tanda titik dua
+removetitik2 <- function(y) gsub(":", "", y)
+reviewclean <- tm_map(reviewclean, removetitik2)
+
+# Membersihkan tanda titik koma
+removetitikkoma <- function(y) gsub(";", " ", y)
+reviewclean <- tm_map(reviewclean, removetitikkoma)
+
+# Membersihkan tanda titik tiga
+removetitik3 <- function(y) gsub("p…", "", y)
+reviewclean <- tm_map(reviewclean, removetitik3)
+
+# Membersihkan amp
+removeamp <- function(y) gsub("&amp;", "", y)
+reviewclean <- tm_map(reviewclean, removeamp)
+
+# Membersihkan karakter
+removeUN <- function(z) gsub("@\\w+", "", z)
+reviewclean <- tm_map(reviewclean, removeUN)
+remove.all <- function(xy) gsub("[^[:alpha:][:space:]]*", "", xy)
+
+# Membersihkan tanda baca
+reviewclean <- tm_map(reviewclean,remove.all)
+reviewclean <- tm_map(reviewclean, removePunctuation)
+reviewclean <- tm_map(reviewclean, tolower)
+
+myStopwords = readLines("stopwords_en.txt")
+reviewclean <- tm_map(reviewclean,removeWords,myStopwords)
+
+dataframe<-data.frame(text=unlist(sapply(reviewclean, `[`)), stringsAsFactors=F)
+View(dataframe)
+
+# Menyimpan data review_text yang sudah dibersihkan
+write.csv(dataframe,file = 'ulasan_clean.csv')
+
+```

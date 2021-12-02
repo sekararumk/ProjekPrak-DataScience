@@ -1,0 +1,210 @@
+---
+title: "ProjectAkhirSentimenAnalisis"
+author: "123190135_SekarArumK"
+date: "11/14/2021"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project Akhir - Tema : Pariwisata
+
+```{r Barplot}
+# Library naive bayes
+library(e1071) 
+# Library klasifikasi data
+library(caret) 
+# Library untuk fungsi get_nrc
+library(syuzhet) 
+
+datapariwisata <- read.csv("ulasan_clean.csv",stringsAsFactors = FALSE)
+# Mengubah text menjadi char
+review <- as.character(datapariwisata$text) 
+s <- get_nrc_sentiment(review)
+
+# Melakukan klasifikasi data
+review_combine <- cbind(datapariwisata$text,s) 
+par(mar=rep(3,4))
+a <- barplot(colSums(s), col=rainbow(10), ylab='count', main='Analisis Sentimen')
+brplt <- a
+```
+
+
+```{r Wordcloud}
+# Library untuk corpus dalam cleaning data
+library(tm)
+library(RTextTools)
+# Library algoritma naivebayes
+library(e1071)
+library(dplyr)
+library(caret)
+df <- read.csv("ulasan_clean.csv",stringsAsFactors = FALSE)
+glimpse(df)
+
+# Set the seed of R‘s random number generator, which is useful for creating simulations or random objects that can be reproduced.
+set.seed(20)
+df <- df[sample(nrow(df)),]
+df <- df[sample(nrow(df)),]
+glimpse(df)
+
+corpus <- Corpus(VectorSource(df$text))
+corpus
+inspect(corpus[1:10])
+
+# Membersihkan data lagi yang tidak dibutuhkan 
+corpus.clean <- corpus%>%
+    tm_map(content_transformer(tolower))%>%
+    tm_map(removePunctuation)%>%
+    tm_map(removeNumbers)%>%
+    tm_map(removeWords,stopwords(kind="en"))%>%
+    tm_map(stripWhitespace)
+dtm <- DocumentTermMatrix(corpus.clean)
+
+inspect(dtm[1:10,1:20])
+
+df.train <- df[1:50,]
+df.test <- df[51:100,]
+
+dtm.train <- dtm[1:50,]
+dtm.test <- dtm[51:100,]
+
+corpus.clean.train <- corpus.clean[1:50]
+corpus.clean.test <- corpus.clean[51:100]
+
+dim(dtm.train)
+fivefreq <- findFreqTerms(dtm.train,5)
+length(fivefreq)
+
+dtm.train.nb <- DocumentTermMatrix(corpus.clean.train,control = list(dictionary=fivefreq))
+
+#dim(dtm.train.nb)
+
+dtm.test.nb <- DocumentTermMatrix(corpus.clean.test,control = list(dictionary=fivefreq))
+
+dim(dtm.test.nb)
+ 
+convert_count <- function(x){
+    y <- ifelse(x>0,1,0)
+    y <- factor(y,levels=c(0,1),labels=c("no","yes"))
+    y
+}
+trainNB <- apply(dtm.train.nb,2,convert_count)
+testNB <- apply(dtm.test.nb,1,convert_count)
+
+
+library(wordcloud)
+wordcloud(corpus.clean,min.freq = 4,max.words=100,random.order=F,colors=brewer.pal(8,"Dark2"))
+
+```
+
+
+
+```{r Shiny App}
+library(shiny)
+library(here)
+library(vroom)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(syuzhet)
+library(wordcloud)
+
+universal_studio<- vroom(here("ulasan_clean.csv"))
+universal_studio <- data.frame(universal_studio)
+ui <- fluidPage(
+    titlePanel("Analisis Sentimen pada Review Universal Studio"),
+        mainPanel(
+            tabsetPanel(type = "tabs",
+               tabPanel("Data Universal Studio", DT::dataTableOutput('tbl2')), # Data Review
+               tabPanel("Data Clean", DT::dataTableOutput('tbl')), # Data Clean
+               tabPanel("Barplot", plotOutput("scatterplot")), # Plot
+               
+               tabPanel("Wordcloud", plotOutput("Wordcloud")) # Wordcloud
+              )
+        )
+    )
+# SERVER
+server <- function(input, output) {
+
+
+    # Output Data Tabel
+    output$tbl2 = DT::renderDataTable({
+        DT::datatable(dataset <- vroom(here('universal_studio_branches.csv')), options = list(lengthChange = FALSE))
+    })
+    
+    # Output Data Clean
+    output$tbl = DT::renderDataTable({
+        DT::datatable(universal_studio, options = list(lengthChange = FALSE))
+    })
+    
+    # Output Plot
+    output$scatterplot <- renderPlot({
+par(mar=rep(3,4))
+a <- barplot(colSums(s),col=rainbow(10),ylab='count',main='Sentimen Analisis')}, height=400)
+    
+    df <- read.csv("ulasan_clean.csv",stringsAsFactors = FALSE)
+glimpse(df)
+
+# Set the seed of R‘s random number generator, which is useful for creating simulations or random objects that can be reproduced.
+set.seed(20)
+df <- df[sample(nrow(df)),]
+df <- df[sample(nrow(df)),]
+glimpse(df)
+
+corpus <- Corpus(VectorSource(df$text))
+corpus
+inspect(corpus[1:10])
+
+# Membersihkan data yang tidak dibutuhkan 
+corpus.clean <- corpus%>%
+    tm_map(content_transformer(tolower))%>%
+    tm_map(removePunctuation)%>%
+    tm_map(removeNumbers)%>%
+    tm_map(removeWords,stopwords(kind="en"))%>%
+    tm_map(stripWhitespace)
+dtm <- DocumentTermMatrix(corpus.clean)
+
+inspect(dtm[1:10,1:20])
+
+df.train <- df[1:50,]
+df.test <- df[51:100,]
+
+dtm.train <- dtm[1:50,]
+dtm.test <- dtm[51:100,]
+
+corpus.clean.train <- corpus.clean[1:50]
+corpus.clean.test <- corpus.clean[51:100]
+
+dim(dtm.train)
+fivefreq <- findFreqTerms(dtm.train,5)
+length(fivefreq)
+
+dtm.train.nb <- DocumentTermMatrix(corpus.clean.train,control = list(dictionary=fivefreq))
+
+#dim(dtm.train.nb)
+
+dtm.test.nb <- DocumentTermMatrix(corpus.clean.test,control = list(dictionary=fivefreq))
+
+dim(dtm.test.nb)
+ 
+convert_count <- function(x){
+    y <- ifelse(x>0,1,0)
+    y <- factor(y,levels=c(0,1),labels=c("no","yes"))
+    y
+}
+trainNB <- apply(dtm.train.nb,2,convert_count)
+testNB <- apply(dtm.test.nb,1,convert_count)
+    
+    # Output WordCloud 
+    output$Wordcloud <- renderPlot({
+    wordcloud(corpus.clean,min.freq = 4,max.words=100,random.order=F,colors=brewer.pal(8,"Dark2"))
+  })
+}
+
+# Program Shiny
+shinyApp(ui = ui, server = server)
+```
